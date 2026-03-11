@@ -15,7 +15,7 @@
       welcomeMessage:
         "Tere! Olen Bioskina assistent. Aitan sul teha juuksetüübi ja nahatüübi testi, leida sobivaid tooteid ning vastan klienditoe küsimustele.",
       exampleMessage:
-        'Näiteks võid teha "Juuksetüübi testi", "Nahatüübi testi", kirjutada "otsi kuivale nahale seerumit" või küsida "kuidas tagastus käib?"',
+        "Vali allolevatest nuppudest juuksetüübi test, nahatüübi test või klienditoe teema, millega soovid abi.",
       poweredByUrl: "https://growlinee.com/ee",
       poweredByLabel: "Powered by Growlinee",
     },
@@ -52,6 +52,7 @@
     { label: "Nahatüübi test", kind: "quiz-start", quizType: "skin" },
     { label: "Tarne info", kind: "message", message: "tarne" },
     { label: "Tagastamine", kind: "message", message: "tagastus" },
+    { label: "Makseviisid", kind: "message", message: "makse" },
     { label: "Kontakt", kind: "message", message: "kontakt" },
   ];
 
@@ -134,17 +135,15 @@
   );
 
   var messages = createElement("div", "bio-chatbot__messages");
-  var chips = createElement("div", "bio-chatbot__chips bio-chatbot__chips--hidden");
   var composer = createElement(
-    "form",
+    "div",
     "bio-chatbot__composer",
-    '<textarea class="bio-chatbot__input" rows="1" placeholder="Küsi toodete või klienditoe kohta!"></textarea>' +
-      '<button class="bio-chatbot__send" type="submit">Saada</button>'
+    '<div class="bio-chatbot__composer-label">Vali tegevus</div>' +
+      '<div class="bio-chatbot__action-grid"></div>'
   );
 
   panel.appendChild(header);
   panel.appendChild(messages);
-  panel.appendChild(chips);
   panel.appendChild(composer);
 
   fabWrap.appendChild(tooltip);
@@ -155,8 +154,8 @@
   document.body.appendChild(root);
 
   var closeButton = header.querySelector(".bio-chatbot__close");
-  var input = composer.querySelector(".bio-chatbot__input");
-  var sendButton = composer.querySelector(".bio-chatbot__send");
+  var composerLabel = composer.querySelector(".bio-chatbot__composer-label");
+  var actionGrid = composer.querySelector(".bio-chatbot__action-grid");
 
   var isBusy = false;
   var initialized = false;
@@ -175,20 +174,22 @@
     messages.scrollTop = messages.scrollHeight;
   }
 
-  function resizeComposer() {
-    input.style.height = "0px";
-    var nextHeight = Math.min(input.scrollHeight, 112);
-    input.style.height = Math.max(nextHeight, 48) + "px";
-  }
-
   function refreshComposerAvailability() {
-    var guidedModeActive = !!quizState;
-    input.disabled = isBusy || guidedModeActive;
-    sendButton.disabled = isBusy || guidedModeActive;
-    sendButton.textContent = isBusy ? "..." : "Saada";
-    input.placeholder = guidedModeActive
-      ? "Vali vastus allolevatest variantidest"
-      : "Küsi toodete või klienditoe kohta!";
+    var buttons = actionGrid.querySelectorAll(".bio-chatbot__action-button");
+    buttons.forEach(function (button) {
+      button.disabled = !!isBusy;
+      button.classList.toggle("bio-chatbot__action-button--disabled", !!isBusy);
+    });
+
+    if (composerLabel) {
+      if (quizState) {
+        composerLabel.textContent = "Põhimenüü";
+      } else if (isBusy) {
+        composerLabel.textContent = "Laen vastust...";
+      } else {
+        composerLabel.textContent = "Vali tegevus";
+      }
+    }
   }
 
   function setPanelOpen(nextOpen) {
@@ -197,8 +198,6 @@
     if (nextOpen) {
       ensureWelcomeMessages();
       window.setTimeout(function () {
-        resizeComposer();
-        input.focus();
         scrollToBottom();
       }, 80);
     }
@@ -304,10 +303,10 @@
   }
 
   function setQuickActions(items) {
-    chips.innerHTML = "";
+    actionGrid.innerHTML = "";
 
     if (!Array.isArray(items) || !items.length) {
-      chips.classList.add("bio-chatbot__chips--hidden");
+      composer.classList.add("bio-chatbot__composer--hidden");
       return;
     }
 
@@ -316,7 +315,7 @@
     });
 
     if (guidedOnly) {
-      chips.classList.add("bio-chatbot__chips--hidden");
+      composer.classList.add("bio-chatbot__composer--hidden");
       appendGuidedOptions(items);
       return;
     }
@@ -324,17 +323,18 @@
     items.forEach(function (item) {
       var button = createElement(
         "button",
-        "bio-chatbot__chip",
+        "bio-chatbot__action-button",
         escapeHtml(item.label)
       );
       button.type = "button";
       button.addEventListener("click", function () {
         handleAction(item, button);
       });
-      chips.appendChild(button);
+      actionGrid.appendChild(button);
     });
 
-    chips.classList.remove("bio-chatbot__chips--hidden");
+    composer.classList.remove("bio-chatbot__composer--hidden");
+    refreshComposerAvailability();
   }
 
   function appendProducts(container, items) {
@@ -695,8 +695,6 @@
     ensureWelcomeMessages();
     appendBubble("user", text);
     var assistantNode = appendTyping();
-    input.value = "";
-    resizeComposer();
     setBusy(true);
 
     try {
@@ -714,7 +712,6 @@
       if (!quizState) {
         setQuickActions(defaultActions);
       }
-      input.focus();
       scrollToBottom();
     }
   }
@@ -731,19 +728,5 @@
     setPanelOpen(false);
   });
 
-  composer.addEventListener("submit", function (event) {
-    event.preventDefault();
-    sendMessage(input.value);
-  });
-
-  input.addEventListener("input", resizeComposer);
-  input.addEventListener("keydown", function (event) {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      sendMessage(input.value);
-    }
-  });
-
-  resizeComposer();
   refreshComposerAvailability();
 })();
