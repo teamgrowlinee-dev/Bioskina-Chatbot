@@ -7,9 +7,17 @@
       apiBase: window.location.origin,
       storeBaseUrl: "https://bioskina.com",
       title: "Bioskina assistent",
+      brandName: "Bioskina",
       launcherLabel: "Küsi toodete või klienditoe kohta",
+      tooltipTitle: "Tere!",
+      tooltipText:
+        "Küsi näiteks nahahoolduse, toodete või klienditoe kohta.",
       welcomeMessage:
-        "Tere! Aitan leida Bioskina looduskosmeetika tooteid ja vastan klienditoe küsimustele.",
+        "Tere! Olen Bioskina assistent. Aitan sul leida sobivaid naha-, keha- ja juuksehooldustooteid ning vastan tarne, tagastuse ja makse küsimustele.",
+      exampleMessage:
+        'Näiteks võid kirjutada "otsi tundlikule nahale näopuhastus", "soovita kuivale nahale seerumit" või küsida "kuidas tagastus käib?"',
+      poweredByUrl: "https://growlinee.com/ee",
+      poweredByLabel: "Powered by Growlinee",
     },
     window.BIOSKINA_CHATBOT_CONFIG || {}
   );
@@ -35,7 +43,27 @@
     return node;
   }
 
+  function createEmojiIcon(className) {
+    return (
+      '<span class="' +
+      className +
+      '" aria-hidden="true">💬</span>'
+    );
+  }
+
   var root = createElement("div", "bio-chatbot");
+  var fabWrap = createElement("div", "bio-chatbot__fab-wrap");
+  var tooltip = createElement(
+    "button",
+    "bio-chatbot__tooltip",
+    '<span class="bio-chatbot__tooltip-title">' +
+      escapeHtml(config.tooltipTitle) +
+      '</span><span class="bio-chatbot__tooltip-body">' +
+      escapeHtml(config.tooltipText) +
+      "</span>"
+  );
+  tooltip.type = "button";
+  tooltip.setAttribute("aria-label", config.launcherLabel);
   var launcher = createElement(
     "button",
     "bio-chatbot__launcher",
@@ -52,9 +80,19 @@
   var header = createElement(
     "header",
     "bio-chatbot__header",
-    '<div><p class="bio-chatbot__eyebrow">Natural cosmetics · Support</p><h2>' +
+    '<div class="bio-chatbot__brand">' +
+      '<div class="bio-chatbot__brand-icon">' +
+      createEmojiIcon("bio-chatbot__brand-emoji") +
+      "</div>" +
+      '<div class="bio-chatbot__brand-copy">' +
+      '<p class="bio-chatbot__eyebrow">Natural cosmetics · Support</p><h2>' +
       escapeHtml(config.title) +
-      '</h2></div><button type="button" class="bio-chatbot__close" aria-label="Close">×</button>'
+      '</h2><a class="bio-chatbot__powered" href="' +
+      escapeHtml(config.poweredByUrl) +
+      '" target="_blank" rel="noopener noreferrer">' +
+      escapeHtml(config.poweredByLabel) +
+      "</a></div></div>" +
+      '<button type="button" class="bio-chatbot__close" aria-label="Close">×</button>'
   );
 
   var messages = createElement("div", "bio-chatbot__messages");
@@ -68,14 +106,19 @@
   panel.appendChild(header);
   panel.appendChild(messages);
   panel.appendChild(composer);
-  root.appendChild(launcher);
+
+  fabWrap.appendChild(tooltip);
+  fabWrap.appendChild(launcher);
+
   root.appendChild(panel);
+  root.appendChild(fabWrap);
   document.body.appendChild(root);
 
   var closeButton = header.querySelector(".bio-chatbot__close");
   var input = composer.querySelector(".bio-chatbot__input");
   var sendButton = composer.querySelector(".bio-chatbot__send");
   var isBusy = false;
+  var initialized = false;
 
   function scrollToBottom() {
     messages.scrollTop = messages.scrollHeight;
@@ -83,8 +126,9 @@
 
   function setPanelOpen(nextOpen) {
     panel.classList.toggle("bio-chatbot__panel--hidden", !nextOpen);
-    launcher.classList.toggle("bio-chatbot__launcher--hidden", !!nextOpen);
+    fabWrap.classList.toggle("bio-chatbot__fab-wrap--hidden", !!nextOpen);
     if (nextOpen) {
+      ensureWelcomeMessages();
       window.setTimeout(function () {
         input.focus();
         scrollToBottom();
@@ -103,6 +147,13 @@
     messages.appendChild(wrapper);
     scrollToBottom();
     return { wrapper: wrapper, bubble: bubble };
+  }
+
+  function ensureWelcomeMessages() {
+    if (initialized) return;
+    appendBubble("assistant", config.welcomeMessage);
+    appendBubble("assistant", config.exampleMessage);
+    initialized = true;
   }
 
   function appendProducts(container, items) {
@@ -263,9 +314,11 @@
     setPanelOpen(true);
   });
 
+  tooltip.addEventListener("click", function () {
+    setPanelOpen(true);
+  });
+
   closeButton.addEventListener("click", function () {
     setPanelOpen(false);
   });
-
-  appendBubble("assistant", config.welcomeMessage);
 })();

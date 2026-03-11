@@ -40,9 +40,14 @@ app.get("/widget/loader.js", (_req, res) => {
       storeBaseUrl: "https://bioskina.com",
       title: "Bioskina assistent",
       launcherLabel: "Küsi toodete või klienditoe kohta",
-      welcomeMessage: "Tere! Aitan leida Bioskina tooteid ja vastan tarne, tagastuse ning makse küsimustele.",
+      tooltipTitle: "Tere!",
+      tooltipText: "Küsi näiteks nahahoolduse, toodete või klienditoe kohta.",
+      welcomeMessage: "Tere! Olen Bioskina assistent. Aitan sul leida sobivaid naha-, keha- ja juuksehooldustooteid ning vastan tarne, tagastuse ja makse küsimustele.",
+      exampleMessage: "Näiteks võid kirjutada \\\"otsi tundlikule nahale näopuhastus\\\", \\\"soovita kuivale nahale seerumit\\\" või küsida \\\"kuidas tagastus käib?\\\"",
+      poweredByUrl: "https://growlinee.com/ee",
+      poweredByLabel: "Powered by Growlinee",
       vendor: "growlinee",
-      widgetVersion: "v1.0.0"
+      widgetVersion: "v1.1.0"
     },
     existing
   );
