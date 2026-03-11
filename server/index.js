@@ -1,0 +1,111 @@
+const cors = require("cors");
+const express = require("express");
+const path = require("path");
+
+const { hasAnthropic } = require("./src/anthropic");
+const { buildChatResponse } = require("./src/chatService");
+const { streamChatPayload, writeSse } = require("./src/streaming");
+
+const app = express();
+const PORT = process.env.PORT || 3001;
+const RENDER_URL =
+  process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+const widgetDir = path.join(__dirname, "..", "widget");
+
+app.use(cors());
+app.use(express.json({ limit: "1mb" }));
+
+app.get("/health", (_req, res) => {
+  res.json({
+    ok: true,
+    service: "bioskina-chatbot",
+    version: "1.0.0",
+    anthropicEnabled: hasAnthropic(),
+  });
+});
+
+app.use("/widget", express.static(widgetDir, { maxAge: "1h" }));
+
+app.get(["/", "/demo"], (_req, res) => {
+  res.sendFile(path.join(widgetDir, "demo.html"));
+});
+
+app.get("/widget/loader.js", (_req, res) => {
+  const loader = `(function () {
+  var existing = window.BIOSKINA_CHATBOT_CONFIG || {};
+  var version = Date.now();
+  window.BIOSKINA_CHATBOT_CONFIG = Object.assign(
+    {
+      apiBase: "${RENDER_URL}",
+      storeBaseUrl: "https://bioskina.com",
+      title: "Bioskina assistent",
+      launcherLabel: "Küsi toodete või klienditoe kohta",
+      welcomeMessage: "Tere! Aitan leida Bioskina tooteid ja vastan tarne, tagastuse ning makse küsimustele.",
+      vendor: "growlinee",
+      widgetVersion: "v1.0.0"
+    },
+    existing
+  );
+
+  var link = document.createElement("link");
+  link.rel = "stylesheet";
+  link.href = "${RENDER_URL}/widget/bioskina-widget.css?v=" + version;
+  document.head.appendChild(link);
+
+  var script = document.createElement("script");
+  script.src = "${RENDER_URL}/widget/bioskina-widget.js?v=" + version;
+  script.defer = true;
+  document.head.appendChild(script);
+})();`;
+
+  res.setHeader("Content-Type", "application/javascript");
+  res.setHeader("Cache-Control", "no-cache, no-store");
+  res.send(loader);
+});
+
+app.post("/api/chat", async (req, res) => {
+  try {
+    const message = String((req.body && req.body.message) || "").trim();
+    if (!message) {
+      return res.status(400).json({ ok: false, error: "Missing message" });
+    }
+
+    const payload = await buildChatResponse(message);
+    return res.json({ ok: true, ...payload });
+  } catch (error) {
+    return res.status(500).json({
+      ok: false,
+      error: String(error && error.message ? error.message : error),
+    });
+  }
+});
+
+app.post("/api/chat/stream", async (req, res) => {
+  const message = String((req.body && req.body.message) || "").trim();
+  if (!message) {
+    return res.status(400).json({ ok: false, error: "Missing message" });
+  }
+
+  res.setHeader("Content-Type", "text/event-stream; charset=utf-8");
+  res.setHeader("Cache-Control", "no-cache, no-store");
+  res.setHeader("Connection", "keep-alive");
+  res.flushHeaders();
+
+  try {
+    const payload = await buildChatResponse(message);
+    await streamChatPayload(res, { ok: true, ...payload });
+  } catch (error) {
+    writeSse(res, "error", {
+      message: String(error && error.message ? error.message : error),
+    });
+    res.end();
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Bioskina chatbot server running on port ${PORT}`);
+  console.log(`Demo:       ${RENDER_URL}/demo`);
+  console.log(`Loader:     ${RENDER_URL}/widget/loader.js`);
+  console.log(`Widget JS:  ${RENDER_URL}/widget/bioskina-widget.js`);
+  console.log(`Widget CSS: ${RENDER_URL}/widget/bioskina-widget.css`);
+});

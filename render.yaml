@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: bioskina-chatbot
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: cd server && npm install
+    startCommand: cd server && npm start
+    envVars:
+      - key: ANTHROPIC_API_KEY
+        sync: false
