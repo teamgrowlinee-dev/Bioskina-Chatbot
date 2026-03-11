@@ -50,18 +50,6 @@ const QUIZ_QUESTIONS = [
       { value: "bleached", label: "Juuksed on blondeeritud või tuntavalt kahjustatud" },
     ],
   },
-  {
-    id: "goal",
-    prompt: "Mis on sinu peamine eesmärk praegu?",
-    options: [
-      { value: "moisture", label: "Niisutus ja pehmus" },
-      { value: "repair", label: "Taastamine ja tugevdamine" },
-      { value: "scalp", label: "Peanaha tasakaal" },
-      { value: "volume", label: "Kergus ja kohevus" },
-      { value: "curl", label: "Lokkide või lainete parem definitsioon" },
-      { value: "color", label: "Värvikaitse" },
-    ],
-  },
 ];
 
 function getQuestionMap() {

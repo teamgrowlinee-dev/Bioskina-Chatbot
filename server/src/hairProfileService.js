@@ -43,6 +43,7 @@ const PROFILE_LABELS = {
     bleached: "tugevam töötlus või blondeerimine",
   },
   goal: {
+    balanced: "tasakaalustatud hooldus",
     moisture: "niisutus ja pehmus",
     repair: "taastamine ja tugevdamine",
     scalp: "peanaha tasakaal",
@@ -73,10 +74,51 @@ function getFamilyId(product) {
     .trim();
 }
 
+function inferHairGoal(normalized) {
+  if (normalized.scalp === "flaky" || normalized.scalp === "oily") {
+    return "scalp";
+  }
+
+  if (
+    normalized.lengths === "damaged" ||
+    normalized.processing === "heat" ||
+    normalized.processing === "bleached"
+  ) {
+    return "repair";
+  }
+
+  if (
+    normalized.lengths === "dry" ||
+    normalized.lengths === "frizzy" ||
+    normalized.scalp === "dry"
+  ) {
+    return "moisture";
+  }
+
+  if (
+    normalized.pattern === "wavy" ||
+    normalized.pattern === "curly" ||
+    normalized.pattern === "coily"
+  ) {
+    return "curl";
+  }
+
+  if (normalized.thickness === "fine") {
+    return "volume";
+  }
+
+  if (normalized.processing === "color") {
+    return "color";
+  }
+
+  return "balanced";
+}
+
 function buildHairProfile(answers) {
   const normalized = normalizeHairQuizAnswers(answers);
   const types = [];
   const concerns = [];
+  const inferredGoal = inferHairGoal(normalized);
 
   if (normalized.scalp === "dry") {
     pushUnique(types, "tundlik peanahk");
@@ -126,21 +168,21 @@ function buildHairProfile(answers) {
     pushUnique(concerns, "kahjustus ja parandus");
   }
 
-  if (normalized.goal === "moisture") {
+  if (inferredGoal === "moisture") {
     pushUnique(types, "kuivad juuksed");
     pushUnique(concerns, "niisutus");
-  } else if (normalized.goal === "repair") {
+  } else if (inferredGoal === "repair") {
     pushUnique(types, "kahjustatud juuksed");
     pushUnique(concerns, "kahjustus ja parandus");
-  } else if (normalized.goal === "scalp") {
+  } else if (inferredGoal === "scalp") {
     pushUnique(concerns, "peanaha rahustamine");
-  } else if (normalized.goal === "volume") {
+  } else if (inferredGoal === "volume") {
     pushUnique(types, "peened/õhukesed juuksed");
     pushUnique(concerns, "maht ja kasv");
-  } else if (normalized.goal === "curl") {
+  } else if (inferredGoal === "curl") {
     pushUnique(types, "lokkis/lainelised juuksed");
     pushUnique(concerns, "lokkide talitsus");
-  } else if (normalized.goal === "color") {
+  } else if (inferredGoal === "color") {
     pushUnique(types, "värvitud juuksed");
     pushUnique(concerns, "värvikaitse");
   }
@@ -160,33 +202,34 @@ function buildHairProfile(answers) {
       PROFILE_LABELS.pattern[normalized.pattern],
       PROFILE_LABELS.processing[normalized.processing],
     ],
-    mainGoal: PROFILE_LABELS.goal[normalized.goal],
+    inferredGoal,
+    mainGoal: PROFILE_LABELS.goal[inferredGoal],
     flags: {
       scalp:
         normalized.scalp === "dry" ||
         normalized.scalp === "oily" ||
         normalized.scalp === "flaky" ||
-        normalized.goal === "scalp",
+        inferredGoal === "scalp",
       dryness:
         normalized.lengths === "dry" ||
         normalized.lengths === "frizzy" ||
-        normalized.goal === "moisture",
+        inferredGoal === "moisture",
       repair:
         normalized.lengths === "damaged" ||
         normalized.processing === "heat" ||
         normalized.processing === "bleached" ||
-        normalized.goal === "repair",
+        inferredGoal === "repair",
       curl:
         normalized.pattern === "wavy" ||
         normalized.pattern === "curly" ||
         normalized.pattern === "coily" ||
-        normalized.goal === "curl",
+        inferredGoal === "curl",
       volume:
-        normalized.thickness === "fine" || normalized.goal === "volume",
+        normalized.thickness === "fine" || inferredGoal === "volume",
       color:
         normalized.processing === "color" ||
         normalized.processing === "bleached" ||
-        normalized.goal === "color",
+        inferredGoal === "color",
     },
   };
 }

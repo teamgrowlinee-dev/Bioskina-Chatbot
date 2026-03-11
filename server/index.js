@@ -23,7 +23,7 @@ app.get("/health", (_req, res) => {
   res.json({
     ok: true,
     service: "bioskina-chatbot",
-    version: "1.2.2",
+    version: "1.2.3",
     anthropicEnabled: hasAnthropic(),
   });
 });
@@ -51,7 +51,7 @@ app.get("/widget/loader.js", (_req, res) => {
       poweredByUrl: "https://growlinee.com/ee",
       poweredByLabel: "Powered by Growlinee",
       vendor: "growlinee",
-      widgetVersion: "v1.2.2"
+      widgetVersion: "v1.2.3"
     },
     existing
   );
