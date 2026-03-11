@@ -15,7 +15,7 @@
       welcomeMessage:
         "Tere! Olen Bioskina assistent. Aitan sul teha juuksetüübi ja nahatüübi testi, leida sobivaid tooteid ning vastan klienditoe küsimustele.",
       exampleMessage:
-        "Vali allolevatest nuppudest juuksetüübi test, nahatüübi test või klienditoe teema, millega soovid abi.",
+        "Kui soovid, võid kirjutada klienditoe või tooteküsimuse. Kiirvalikuna saad kohe teha ka juuksetüübi või nahatüübi testi.",
       poweredByUrl: "https://growlinee.com/ee",
       poweredByLabel: "Powered by Growlinee",
     },
@@ -50,10 +50,6 @@
   var defaultActions = [
     { label: "Juuksetüübi test", kind: "quiz-start", quizType: "hair" },
     { label: "Nahatüübi test", kind: "quiz-start", quizType: "skin" },
-    { label: "Tarne info", kind: "message", message: "tarne" },
-    { label: "Tagastamine", kind: "message", message: "tagastus" },
-    { label: "Makseviisid", kind: "message", message: "makse" },
-    { label: "Kontakt", kind: "message", message: "kontakt" },
   ];
 
   function escapeHtml(value) {
@@ -135,15 +131,17 @@
   );
 
   var messages = createElement("div", "bio-chatbot__messages");
+  var chips = createElement("div", "bio-chatbot__chips bio-chatbot__chips--hidden");
   var composer = createElement(
-    "div",
+    "form",
     "bio-chatbot__composer",
-    '<div class="bio-chatbot__composer-label">Vali tegevus</div>' +
-      '<div class="bio-chatbot__action-grid"></div>'
+    '<textarea class="bio-chatbot__input" rows="1" placeholder="Küsi toodete või klienditoe kohta!"></textarea>' +
+      '<button class="bio-chatbot__send" type="submit">Saada</button>'
   );
 
   panel.appendChild(header);
   panel.appendChild(messages);
+  panel.appendChild(chips);
   panel.appendChild(composer);
 
   fabWrap.appendChild(tooltip);
@@ -154,8 +152,8 @@
   document.body.appendChild(root);
 
   var closeButton = header.querySelector(".bio-chatbot__close");
-  var composerLabel = composer.querySelector(".bio-chatbot__composer-label");
-  var actionGrid = composer.querySelector(".bio-chatbot__action-grid");
+  var input = composer.querySelector(".bio-chatbot__input");
+  var sendButton = composer.querySelector(".bio-chatbot__send");
 
   var isBusy = false;
   var initialized = false;
@@ -174,22 +172,20 @@
     messages.scrollTop = messages.scrollHeight;
   }
 
-  function refreshComposerAvailability() {
-    var buttons = actionGrid.querySelectorAll(".bio-chatbot__action-button");
-    buttons.forEach(function (button) {
-      button.disabled = !!isBusy;
-      button.classList.toggle("bio-chatbot__action-button--disabled", !!isBusy);
-    });
+  function resizeComposer() {
+    input.style.height = "0px";
+    var nextHeight = Math.min(input.scrollHeight, 112);
+    input.style.height = Math.max(nextHeight, 48) + "px";
+  }
 
-    if (composerLabel) {
-      if (quizState) {
-        composerLabel.textContent = "Põhimenüü";
-      } else if (isBusy) {
-        composerLabel.textContent = "Laen vastust...";
-      } else {
-        composerLabel.textContent = "Vali tegevus";
-      }
-    }
+  function refreshComposerAvailability() {
+    var guidedModeActive = !!quizState;
+    input.disabled = isBusy || guidedModeActive;
+    sendButton.disabled = isBusy || guidedModeActive;
+    sendButton.textContent = isBusy ? "..." : "Saada";
+    input.placeholder = guidedModeActive
+      ? "Vali vastus allolevatest variantidest"
+      : "Küsi toodete või klienditoe kohta!";
   }
 
   function setPanelOpen(nextOpen) {
@@ -198,6 +194,10 @@
     if (nextOpen) {
       ensureWelcomeMessages();
       window.setTimeout(function () {
+        resizeComposer();
+        if (!input.disabled) {
+          input.focus();
+        }
         scrollToBottom();
       }, 80);
     }
@@ -303,10 +303,10 @@
   }
 
   function setQuickActions(items) {
-    actionGrid.innerHTML = "";
+    chips.innerHTML = "";
 
     if (!Array.isArray(items) || !items.length) {
-      composer.classList.add("bio-chatbot__composer--hidden");
+      chips.classList.add("bio-chatbot__chips--hidden");
       return;
     }
 
@@ -315,7 +315,7 @@
     });
 
     if (guidedOnly) {
-      composer.classList.add("bio-chatbot__composer--hidden");
+      chips.classList.add("bio-chatbot__chips--hidden");
       appendGuidedOptions(items);
       return;
     }
@@ -323,18 +323,17 @@
     items.forEach(function (item) {
       var button = createElement(
         "button",
-        "bio-chatbot__action-button",
+        "bio-chatbot__chip",
         escapeHtml(item.label)
       );
       button.type = "button";
       button.addEventListener("click", function () {
         handleAction(item, button);
       });
-      actionGrid.appendChild(button);
+      chips.appendChild(button);
     });
 
-    composer.classList.remove("bio-chatbot__composer--hidden");
-    refreshComposerAvailability();
+    chips.classList.remove("bio-chatbot__chips--hidden");
   }
 
   function appendProducts(container, items) {
@@ -500,20 +499,7 @@
       .then(function (payload) {
         setAssistantText(assistantNode, payload.assistantText || "");
         appendProducts(assistantNode.wrapper, payload.products || []);
-        setQuickActions([
-          {
-            label: QUIZ_META[quizType].label + " uuesti",
-            kind: "quiz-start",
-            quizType: quizType,
-          },
-          {
-            label:
-              quizType === "hair" ? QUIZ_META.skin.label : QUIZ_META.hair.label,
-            kind: "quiz-start",
-            quizType: quizType === "hair" ? "skin" : "hair",
-          },
-          { label: "Kontakt", kind: "message", message: "kontakt" },
-        ]);
+        setQuickActions(defaultActions);
       })
       .catch(function (error) {
         setAssistantText(
@@ -695,6 +681,8 @@
     ensureWelcomeMessages();
     appendBubble("user", text);
     var assistantNode = appendTyping();
+    input.value = "";
+    resizeComposer();
     setBusy(true);
 
     try {
@@ -712,6 +700,9 @@
       if (!quizState) {
         setQuickActions(defaultActions);
       }
+      if (!input.disabled) {
+        input.focus();
+      }
       scrollToBottom();
     }
   }
@@ -728,5 +719,19 @@
     setPanelOpen(false);
   });
 
+  composer.addEventListener("submit", function (event) {
+    event.preventDefault();
+    sendMessage(input.value);
+  });
+
+  input.addEventListener("input", resizeComposer);
+  input.addEventListener("keydown", function (event) {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage(input.value);
+    }
+  });
+
+  resizeComposer();
   refreshComposerAvailability();
 })();

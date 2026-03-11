@@ -23,7 +23,7 @@ app.get("/health", (_req, res) => {
   res.json({
     ok: true,
     service: "bioskina-chatbot",
-    version: "1.2.1",
+    version: "1.2.2",
     anthropicEnabled: hasAnthropic(),
   });
 });
@@ -47,11 +47,11 @@ app.get("/widget/loader.js", (_req, res) => {
       tooltipTitle: "Tere!",
       tooltipText: "Tee juuksetüübi või nahatüübi test või küsi tootesoovitust.",
       welcomeMessage: "Tere! Olen Bioskina assistent. Aitan sul teha juuksetüübi ja nahatüübi testi, leida sobivaid tooteid ning vastan klienditoe küsimustele.",
-      exampleMessage: "Vali allolevatest nuppudest juuksetüübi test, nahatüübi test või klienditoe teema, millega soovid abi.",
+      exampleMessage: "Kui soovid, võid kirjutada klienditoe või tooteküsimuse. Kiirvalikuna saad kohe teha ka juuksetüübi või nahatüübi testi.",
       poweredByUrl: "https://growlinee.com/ee",
       poweredByLabel: "Powered by Growlinee",
       vendor: "growlinee",
-      widgetVersion: "v1.2.1"
+      widgetVersion: "v1.2.2"
     },
     existing
   );
