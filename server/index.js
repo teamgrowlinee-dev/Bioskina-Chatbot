@@ -4,6 +4,10 @@ const path = require("path");
 
 const { hasAnthropic } = require("./src/anthropic");
 const { buildChatResponse } = require("./src/chatService");
+const { getPublicHairQuizQuestions } = require("./src/hairQuiz");
+const { buildHairProfileResponse } = require("./src/hairProfileService");
+const { getPublicSkinQuizQuestions } = require("./src/skinQuiz");
+const { buildSkinProfileResponse } = require("./src/skinProfileService");
 const { streamChatPayload, writeSse } = require("./src/streaming");
 
 const app = express();
@@ -19,7 +23,7 @@ app.get("/health", (_req, res) => {
   res.json({
     ok: true,
     service: "bioskina-chatbot",
-    version: "1.0.0",
+    version: "1.2.0",
     anthropicEnabled: hasAnthropic(),
   });
 });
@@ -41,13 +45,13 @@ app.get("/widget/loader.js", (_req, res) => {
       title: "Bioskina assistent",
       launcherLabel: "Küsi toodete või klienditoe kohta",
       tooltipTitle: "Tere!",
-      tooltipText: "Küsi näiteks nahahoolduse, toodete või klienditoe kohta.",
-      welcomeMessage: "Tere! Olen Bioskina assistent. Aitan sul leida sobivaid naha-, keha- ja juuksehooldustooteid ning vastan tarne, tagastuse ja makse küsimustele.",
-      exampleMessage: "Näiteks võid kirjutada \\\"otsi tundlikule nahale näopuhastus\\\", \\\"soovita kuivale nahale seerumit\\\" või küsida \\\"kuidas tagastus käib?\\\"",
+      tooltipText: "Tee juuksetüübi või nahatüübi test või küsi tootesoovitust.",
+      welcomeMessage: "Tere! Olen Bioskina assistent. Aitan sul teha juuksetüübi ja nahatüübi testi, leida sobivaid tooteid ning vastan klienditoe küsimustele.",
+      exampleMessage: "Näiteks võid teha \\\"Juuksetüübi testi\\\", \\\"Nahatüübi testi\\\", kirjutada \\\"otsi kuivale nahale seerumit\\\" või küsida \\\"kuidas tagastus käib?\\\"",
       poweredByUrl: "https://growlinee.com/ee",
       poweredByLabel: "Powered by Growlinee",
       vendor: "growlinee",
-      widgetVersion: "v1.1.0"
+      widgetVersion: "v1.2.0"
     },
     existing
   );
@@ -66,6 +70,48 @@ app.get("/widget/loader.js", (_req, res) => {
   res.setHeader("Content-Type", "application/javascript");
   res.setHeader("Cache-Control", "no-cache, no-store");
   res.send(loader);
+});
+
+app.get("/api/hair-quiz", (_req, res) => {
+  res.json({
+    ok: true,
+    type: "hair",
+    questions: getPublicHairQuizQuestions(),
+  });
+});
+
+app.post("/api/hair-profile", async (req, res) => {
+  try {
+    const answers = req.body && req.body.answers;
+    const payload = await buildHairProfileResponse(answers);
+    return res.json({ ok: true, ...payload });
+  } catch (error) {
+    return res.status(400).json({
+      ok: false,
+      error: String(error && error.message ? error.message : error),
+    });
+  }
+});
+
+app.get("/api/skin-quiz", (_req, res) => {
+  res.json({
+    ok: true,
+    type: "skin",
+    questions: getPublicSkinQuizQuestions(),
+  });
+});
+
+app.post("/api/skin-profile", async (req, res) => {
+  try {
+    const answers = req.body && req.body.answers;
+    const payload = await buildSkinProfileResponse(answers);
+    return res.json({ ok: true, ...payload });
+  } catch (error) {
+    return res.status(400).json({
+      ok: false,
+      error: String(error && error.message ? error.message : error),
+    });
+  }
 });
 
 app.post("/api/chat", async (req, res) => {

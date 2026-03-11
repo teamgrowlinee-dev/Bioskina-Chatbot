@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "node --watch index.js",
-    "check": "node --check index.js && node --check src/anthropic.js && node --check src/chatService.js && node --check src/bioskinaApi.js && node --check src/intent.js && node --check src/streaming.js && node --check src/supportData.js"
+    "check": "node --check index.js && node --check src/anthropic.js && node --check src/chatService.js && node --check src/bioskinaApi.js && node --check src/intent.js && node --check src/streaming.js && node --check src/supportData.js && node --check src/recommendationCatalog.js && node --check src/hairQuiz.js && node --check src/skinQuiz.js && node --check src/hairProfileService.js && node --check src/skinProfileService.js"
   },
   "engines": {
     "node": ">=20"

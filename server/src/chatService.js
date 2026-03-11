@@ -75,9 +75,9 @@ async function buildAnthropicShoppingText(message, products) {
 
 function buildShoppingText(message, products) {
   if (!products.length) {
-    return `I couldn't find exact matches for "${message}". Try a more specific keyword, e.g. "face serum for dry skin" or "natural sunscreen SPF 50".`;
+    return `Ma ei leidnud otsingule "${message}" täpseid vasteid. Proovi täpsemat märksõna, näiteks "seerum kuivale nahale" või "looduslik SPF 50".`;
   }
-  return `Here are the best matches for "${message}" from Bioskina. Open a product page for more details.`;
+  return `Siin on Bioskina parimad vasted otsingule "${message}". Ava tooteleht, et näha detaile ja koostist.`;
 }
 
 async function buildChatResponse(message) {
@@ -87,7 +87,25 @@ async function buildChatResponse(message) {
   if (!cleanMessage) {
     return {
       mode: "smalltalk",
-      assistantText: "Enter a question or product search.",
+      assistantText: "Sisesta küsimus või tooteotsing.",
+      products: [],
+    };
+  }
+
+  if (/juukset[üu]übi test/i.test(cleanMessage)) {
+    return {
+      mode: "smalltalk",
+      assistantText:
+        'Juuksetüübi testi saad alustada all olevast nupust "Juuksetüübi test". Vastad valikvastustega küsimustele ja seejärel soovitan sobiva komplekti.',
+      products: [],
+    };
+  }
+
+  if (/nahat[üu]übi test/i.test(cleanMessage)) {
+    return {
+      mode: "smalltalk",
+      assistantText:
+        'Nahatüübi testi saad alustada all olevast nupust "Nahatüübi test". Vastad valikvastustega küsimustele ja seejärel soovitan sobiva nahahoolduse rutiini.',
       products: [],
     };
   }
